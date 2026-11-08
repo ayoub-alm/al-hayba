@@ -477,7 +477,10 @@ footer{border-top:1px solid var(--line);padding:40px 0 120px;color:var(--muted);
   <div class="wrap reveal">
     <h2>الهيبة كتبدا <span class="gold-text">بقرار واحد</span></h2>
     <p class="fr">Commandez maintenant — réponse rapide sur WhatsApp.</p>
-    <a class="btn btn--wa btn--pulse" data-wa="general" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg> تواصل معنا على واتساب</a>
+    <div class="cta-row" style="justify-content:center">
+      <a class="btn btn--wa btn--pulse" data-wa="general" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg> <span dir="ltr">07 84 96 01 06</span></a>
+      <a class="btn btn--ghost" data-wa="general2" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg> <span dir="ltr">06 98 18 38 75</span></a>
+    </div>
   </div>
 </section>
 
@@ -487,7 +490,8 @@ footer{border-top:1px solid var(--line);padding:40px 0 120px;color:var(--muted);
   <div class="wrap foot">
     <div>
       <a href="#top" class="logo"><span class="logo__mark">H</span><span class="logo__name">ALHAYBA<small>متجر الهيبة</small></span></a>
-      <p style="margin-top:14px">© <span id="yr"></span> ALHAYBA Store</p>
+      <p style="margin-top:14px">واتساب: <a data-wa="general" href="#" target="_blank" rel="noopener" dir="ltr" style="color:var(--gold-2)">07 84 96 01 06</a> · <a data-wa="general2" href="#" target="_blank" rel="noopener" dir="ltr" style="color:var(--gold-2)">06 98 18 38 75</a></p>
+      <p style="margin-top:6px">© <span id="yr"></span> ALHAYBA Store</p>
     </div>
     <p class="disclaimer fr" dir="ltr">Produits réservés aux adultes (18+). Ces produits ne sont pas des médicaments et ne remplacent pas un avis médical. Déconseillés aux personnes sous traitement, souffrant de maladies cardiaques, de diabète ou d'hypertension, ainsi qu'en cas d'allergie au miel, sans avis médical préalable. Respectez la dose recommandée.</p>
   </div>
@@ -507,8 +511,9 @@ footer{border-top:1px solid var(--line);padding:40px 0 120px;color:var(--muted);
 <script>
 /* ============ CONFIG — edit here ============ */
 const CONFIG = {
-  // WhatsApp number in international format, digits only (212 = Maroc). REPLACE ME.
-  whatsapp: "212600000000",
+  // WhatsApp numbers in international format, digits only (212 = Maroc).
+  whatsapp: "212784960106",   // main number  (07 84 96 01 06)
+  whatsapp2: "212698183875",  // second number (06 98 18 38 75)
   currency: "DH",
   products: [
     { id:"sexo", featured:true, ribbon:"🔥 الأكثر طلبا",
@@ -568,7 +573,9 @@ $("#productGrid").innerHTML = CONFIG.products.map((p,i) => `
 function refreshLinks(){
   $$("[data-wa]").forEach(a => {
     const k = a.dataset.wa, p = byId[k];
-    a.href = p ? waUrl(productMsg(p, qtyState[k])) : waUrl(generalMsg);
+    a.href = p ? waUrl(productMsg(p, qtyState[k]))
+           : k === "general2" ? `https://wa.me/${CONFIG.whatsapp2}?text=${encodeURIComponent(generalMsg)}`
+           : waUrl(generalMsg);
   });
 }
 document.addEventListener("click", e => {
