@@ -35,6 +35,36 @@ assets/og-image.jpg image shown when the link is shared (WhatsApp, Facebook…)
 robots.txt, sitemap.xml, favicon.svg, site.webmanifest
 ```
 
+## Product pages (for ads)
+Every product has its own landing page with an order form built in:
+
+| Product | Link for ads |
+|---|---|
+| Sexo Miel | https://al-hayba.vercel.app/produits/sexo-miel |
+| Prosta Miel | https://al-hayba.vercel.app/produits/prosta-miel |
+| Prostalex | https://al-hayba.vercel.app/produits/prostalex |
+| Maca | https://al-hayba.vercel.app/produits/maca |
+| Ashwagandha | https://al-hayba.vercel.app/produits/ashwagandha |
+| Tribulus | https://al-hayba.vercel.app/produits/tribulus |
+| Shilajit | https://al-hayba.vercel.app/produits/shilajit |
+| Ginseng | https://al-hayba.vercel.app/produits/ginseng |
+| Racine d'ortie | https://al-hayba.vercel.app/produits/racine-ortie |
+| Pack huile de courge | https://al-hayba.vercel.app/produits/pack-huile-courge |
+| Pack costus marin | https://al-hayba.vercel.app/produits/pack-costus-marin |
+| Crème Al Jamal | https://al-hayba.vercel.app/produits/creme-al-jamal |
+| Huile de gingembre | https://al-hayba.vercel.app/produits/huile-gingembre |
+
+**Track which ad brings orders:** add UTM tags to the link, e.g.
+`https://al-hayba.vercel.app/produits/sexo-miel?utm_source=facebook&utm_campaign=sexo-nov`.
+The full link is saved in the Sheet column **Page** for every order.
+
+**The pages are generated** from the product cards in `index.html`. After changing a product
+(price, name, description, image), run:
+```bash
+node tools/build-product-pages.js
+```
+This rebuilds `produits/*.html` and `sitemap.xml`. Share images per product are in `assets/og/`.
+
 ## Common edits
 - **WhatsApp numbers** — `CONFIG` at the top of `js/app.js`, and the visible numbers in `index.html` (search `07 84`).
 - **Price / name of a product** — edit its `<article class="p-card" …>` in `index.html`:

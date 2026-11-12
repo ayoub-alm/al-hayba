@@ -1,6 +1,7 @@
-/* ALHAYBA Store — app logic
-   Product data is read from the HTML cards (data-* attributes),
-   so prices/names only need to be edited in index.html. */
+/* ALHAYBA Store — app logic (store page + product pages)
+   Store page: product data is read from the HTML cards (data-* attributes).
+   Product pages (/produits/*.html): data comes from the embedded #catalogData JSON,
+   generated from index.html by tools/build-product-pages.js. */
 (() => {
   "use strict";
 
@@ -22,25 +23,29 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
-  /* ---------- products from DOM ---------- */
-  const cards = $$(".p-card[data-id]");
-  const products = cards.map(card => ({
-    id: card.dataset.id,
-    name: card.dataset.name,
-    nameFr: card.dataset.nameFr,
-    size: card.dataset.size,
-    price: Number(card.dataset.price) || 0,
-    img: card.dataset.img,
-    catLabel: card.dataset.catLabel,
-    group: card.closest("[data-group]")?.dataset.group,
-    card,
-  }));
+  /* ---------- products: from store cards, or from the product page catalog ---------- */
+  const cards = $$("#productGrid .p-card[data-id], .cat-group .p-card[data-id]");
+  const products = cards.length
+    ? cards.map(card => ({
+        id: card.dataset.id,
+        name: card.dataset.name,
+        nameFr: card.dataset.nameFr,
+        size: card.dataset.size,
+        price: Number(card.dataset.price) || 0,
+        img: card.dataset.img,
+        catLabel: card.dataset.catLabel,
+        group: card.closest("[data-group]")?.dataset.group,
+        card,
+      }))
+    : (() => { try { return JSON.parse($("#catalogData")?.textContent || "[]"); } catch { return []; } })();
   const byId = Object.fromEntries(products.map(p => [p.id, p]));
   const money = n => `${n} ${CONFIG.currency}`;
 
   /* ---------- WhatsApp ---------- */
-  const wa = (text, number = CONFIG.whatsapp) => `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
-  const hello = "السلام عليكم ALHAYBA 👋";
+  // api.whatsapp.com directly: the wa.me redirect turns emojis into "�"
+  const wa = (text, number = CONFIG.whatsapp) => `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(text)}`;
+  // No emojis in messages: WhatsApp's link page shows them as "�"
+  const hello = "السلام عليكم ALHAYBA";
   const productMsg = (p, q = 1) =>
     `${hello}\nبغيت نطلب:\n• ${p.nameFr} (${p.name}) — ${p.size}\n• الكمية: ${q}\n• الثمن: ${money(p.price * q)}\n\nعفاكم أكدو ليا ثمن التوصيل.`;
   const generalMsg = `${hello}\nبغيت نعرف أكثر على المنتجات ديالكم.`;
@@ -124,7 +129,7 @@
   }
 
   const customerLines = c =>
-    `\n\n👤 الاسم: ${c.name}\n📞 الهاتف: ${c.phone}\n📍 المدينة: ${c.city}` + (c.address ? `\n🏠 العنوان: ${c.address}` : "");
+    `\n\nالاسم: ${c.name}\nالهاتف: ${c.phone}\nالمدينة: ${c.city}` + (c.address ? `\nالعنوان: ${c.address}` : "");
 
   /* ---------- toast ---------- */
   const toastEl = $("#toast");
@@ -336,9 +341,10 @@
     (again && $(again, cartDialog) || $("[data-close]", cartDialog)).focus();
   });
 
-  /* ================= PRODUCT DETAILS ================= */
+  /* ================= PRODUCT DETAILS (store page) ================= */
   const pd = $("#productDialog");
   let pdId = null, pdQty = 1;
+  if (pd) {
   function setPdQty(n) {
     pdQty = Math.max(1, Math.min(10, n));
     $("#pdQty").textContent = pdQty;
@@ -357,6 +363,8 @@
     $("#pdTitle").textContent = p.name;
     $("#pdSub").textContent = `${p.nameFr} · ${p.size}`;
     $("#pdText").innerHTML = $(".p-details", p.card)?.innerHTML || "";
+    const pageLink = $("#pdPage");
+    if (pageLink) pageLink.href = "produits/" + p.img.split("/").pop().replace(/\.\w+$/, "");
     setPdQty(1);
     openDialog(pd);
   }
@@ -371,6 +379,43 @@
   // deep link: /#p-maca opens the product
   const fromHash = location.hash.match(/^#p-(.+)$/);
   if (fromHash && byId[fromHash[1]]) setTimeout(() => openProduct(fromHash[1]), 400);
+  }
+
+  /* ================= INLINE ORDER (product pages) ================= */
+  const ppForm = $("#ppForm");
+  if (ppForm) {
+    const pid = ppForm.dataset.product, pp = { qty: 1 };
+    const upP = upsellFor(pid);
+    const upCheck = $("#ppUpsellCheck");
+    if (!upP && $("#ppUpsell")) $("#ppUpsell").hidden = true;
+    const render = () => {
+      const p = byId[pid];
+      const total = p.price * pp.qty + (upP && upCheck?.checked ? upP.price : 0);
+      $("#ppQty").textContent = pp.qty;
+      $("#ppTotal").textContent = money(total);
+      $("#ppSubmit span").innerHTML = `أكد الطلب — <bdi dir="ltr">${money(total)}</bdi>`;
+    };
+    $("#ppMinus").addEventListener("click", () => { pp.qty = Math.max(1, pp.qty - 1); render(); });
+    $("#ppPlus").addEventListener("click", () => { pp.qty = Math.min(10, pp.qty + 1); render(); });
+    upCheck?.addEventListener("change", render);
+    ppForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const c = readCustomer(ppForm, $("#ppError"));
+      if (!c) return;
+      const list = [{ p: byId[pid], q: pp.qty }];
+      if (upP && upCheck?.checked) list.push({ p: upP, q: 1 });
+      await placeOrder({ source: "page", list, c, btn: $("#ppSubmit") });
+    });
+    render();
+  }
+  // "scroll to the order form" buttons on product pages
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-goto-form]");
+    if (!b || !ppForm) return;
+    e.preventDefault();
+    ppForm.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    setTimeout(() => (["name", "phone", "city"].map(k => ppForm.elements[k]).find(i => !i.value) || $("#ppSubmit")).focus({ preventScroll: true }), 450);
+  });
 
   /* ================= CATEGORIES ================= */
   const groups = $$("[data-group]");
@@ -391,25 +436,27 @@
     const already = b.classList.contains("cat-tile") && b.getAttribute("aria-pressed") === "true";
     applyFilter(already ? "all" : cat, b.classList.contains("cat-tile"));
   }));
-  $$("[data-filter-link]").forEach(a => a.addEventListener("click", e => {
+  if (groups.length) $$("[data-filter-link]").forEach(a => a.addEventListener("click", e => {
     e.preventDefault();
     applyFilter(a.dataset.filterLink, true);
   }));
 
   /* ================= ORDER FORM ================= */
-  const form = $("#orderForm"), sel = $("#fProduct"), qtySel = $("#fQty"), totalEl = $("#fTotal"), errEl = $("#formError");
-  sel.innerHTML = products.map(p => `<option value="${p.id}">${p.name} — ${p.price} درهم</option>`).join("");
-  const updTotal = () => { totalEl.textContent = money(byId[sel.value].price * Number(qtySel.value)); };
-  sel.addEventListener("change", updTotal);
-  qtySel.addEventListener("change", updTotal);
-  updTotal();
-
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
-    const c = readCustomer(form, errEl);
-    if (!c) return;
-    await placeOrder({ source: "form", list: [{ p: byId[sel.value], q: Number(qtySel.value) }], c, btn: $("button[type=submit]", form) });
-  });
+  const form = $("#orderForm");
+  if (form) {
+    const sel = $("#fProduct"), qtySel = $("#fQty"), totalEl = $("#fTotal"), errEl = $("#formError");
+    sel.innerHTML = products.map(p => `<option value="${p.id}">${p.name} — ${p.price} درهم</option>`).join("");
+    const updTotal = () => { totalEl.textContent = money(byId[sel.value].price * Number(qtySel.value)); };
+    sel.addEventListener("change", updTotal);
+    qtySel.addEventListener("change", updTotal);
+    updTotal();
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const c = readCustomer(form, errEl);
+      if (!c) return;
+      await placeOrder({ source: "form", list: [{ p: byId[sel.value], q: Number(qtySel.value) }], c, btn: $("button[type=submit]", form) });
+    });
+  }
 
   /* ---------- log direct WhatsApp product clicks ---------- */
   document.addEventListener("click", e => {
@@ -430,15 +477,20 @@
       barBtn.textContent = "كمّل الطلب";
       barBtn.onclick = () => { renderCart(); openDialog(cartDialog); };
     } else {
-      const p = byId[CONFIG.featured];
+      const p = byId[document.body.dataset.product] || byId[CONFIG.featured];
       $("#mbarTitle").innerHTML = `${p.name} · <bdi dir="ltr">${p.size}</bdi>`;
       $("#mbarPrice").textContent = money(p.price);
       barBtn.textContent = "اطلب دابا";
-      barBtn.onclick = () => openQuickOrder(p.id);
+      barBtn.onclick = ppForm
+        ? () => $("[data-goto-form]")?.click()
+        : () => openQuickOrder(p.id);
     }
   }
-  new IntersectionObserver(([en]) => bar.classList.toggle("is-on", !en.isIntersecting))
-    .observe($(".hero"));
+  const barTrigger = $(".hero") || $(".pp-form-wrap");
+  if (barTrigger) {
+    // store: show once the hero is scrolled past · product page: show whenever the order form is off-screen
+    new IntersectionObserver(([en]) => bar.classList.toggle("is-on", !en.isIntersecting)).observe(barTrigger);
+  }
 
   /* ================= MENU ================= */
   const menuBtn = $("#menuBtn"), nav = $("#mainNav");

@@ -29,6 +29,10 @@
 *,*::before,*::after{box-sizing:border-box}
 *{margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+/* safety net against sideways scrolling on phones ("clip" keeps sticky header working) */
+html,body{overflow-x:clip}
+.grid > *,.cats > *,.videos > *,.steps > *{min-width:0}
+.order__form,.drawer__foot,.qo__form{position:relative}
 body{background:var(--bg);color:var(--text);font-family:var(--font-ar);font-size:16px;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 img,video,svg{display:block;max-width:100%}
 a{color:inherit;text-decoration:none}
@@ -269,7 +273,8 @@ dialog::backdrop{background:rgba(0,0,0,.65);backdrop-filter:blur(3px)}
 .drawer__fields .field label{font-size:12px;margin-bottom:4px}
 .drawer__fields .field input{height:44px;font-size:15px}
 .drawer__fields .row2{gap:10px;grid-template-columns:1fr 1fr}
-.hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0}
+/* anti-spam field: invisible, takes no space, never pushes the layout sideways (RTL-safe) */
+.hp{position:absolute!important;inset:0 auto auto 0;width:1px!important;height:1px!important;padding:0!important;border:0!important;opacity:0;pointer-events:none;clip-path:inset(50%);overflow:hidden}
 .btn.is-loading{pointer-events:none;opacity:.8}
 .btn.is-loading svg{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -437,6 +442,75 @@ body.is-locked{overflow:hidden}
   .qo__product img{width:56px;height:56px}
   .p-actions .btn-icon--cart{width:42px;height:42px}
 }
+/* ======================= PRODUCT PAGE ======================= */
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:18px 0 0;font-size:13px;color:var(--muted)}
+.crumbs a:hover{color:var(--gold-light)}
+.crumbs [aria-current]{color:var(--text);font-weight:700}
+.pp{padding:22px 0 72px;background:radial-gradient(45% 60% at 75% 35%,rgba(214,175,92,.12),transparent 70%)}
+.pp__grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+.pp__media{position:sticky;top:calc(var(--header-h) + 18px)}
+.pp__img{position:relative;border-radius:22px;overflow:hidden;background:#f5f1ea;border:1px solid var(--line-2);aspect-ratio:1;box-shadow:var(--shadow)}
+.pp__img img{width:100%;height:100%;object-fit:contain;padding:22px}
+.pp__img--photo img{object-fit:cover;padding:0}
+.pp__img .p-badge{top:16px;inset-inline-start:16px;font-size:13px;padding:6px 12px}
+.pp__badges{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.pp__badges li{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-align:center;font-size:12.5px;font-weight:700;line-height:1.35}
+.pp__badges svg{width:22px;height:22px;color:var(--gold)}
+.pp__info{display:flex;flex-direction:column;gap:10px}
+.pp__info h1{font-size:clamp(30px,3.6vw,42px);font-weight:800;line-height:1.25}
+.pp__info h1 span{display:block;font:500 15px var(--font-lat);color:var(--gold);margin-top:4px;letter-spacing:.03em}
+.pp__price{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.pp__price .price{font-size:40px}
+.pp__price .price small{font-size:17px}
+.pp__cod{padding:5px 12px;border-radius:999px;background:rgba(37,211,102,.12);color:#5fe39a;font-size:13px;font-weight:700}
+.pp__desc{color:var(--muted);font-size:16px;line-height:1.85}
+.pp__points{list-style:none;display:grid;gap:7px;font-size:14.5px}
+.pp__points li{display:flex;align-items:center;gap:8px}
+.pp__points svg{width:17px;height:17px;flex:none;color:var(--gold)}
+.pp__points b{font-weight:700}
+.pp__points span{color:var(--muted)}
+.pp-form-wrap{margin-top:10px;scroll-margin-top:calc(var(--header-h) + 16px)}
+.pp-form{display:grid;gap:12px;padding:20px;border:1.5px solid var(--gold);border-radius:20px;background:linear-gradient(180deg,var(--surface-2),var(--surface));box-shadow:0 30px 60px -30px rgba(214,175,92,.45)}
+.pp-form__head h2{font-size:22px;line-height:1.3}
+.pp-form__head p{font-size:13px;color:var(--muted)}
+.pp-form__qty{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-weight:700;font-size:14px}
+.pp-form .form-error:empty{display:none}
+.pp__wa{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-size:14px;font-weight:700;color:#5fe39a}
+.pp__wa svg{width:20px;height:20px}
+.pp__wa:hover{text-decoration:underline}
+.pp-details{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:start}
+.pp-details__text{display:grid;gap:14px}
+.pp-details__text h2{font-size:clamp(26px,3vw,34px);line-height:1.3}
+.pp-details__text > p{color:var(--muted);font-size:15.5px;line-height:1.9}
+.pp-details__text .btn{justify-self:start;margin-top:8px}
+.pp-details__video .video{margin:0}
+.pp-details__video.is-portrait{max-width:340px;justify-self:center;width:100%}
+.pp-all{text-align:center;margin-top:30px}
+.p-name a:hover{color:var(--gold-light)}
+
+@media (max-width:900px){
+  .pp{padding:14px 0 48px}
+  .pp__grid{grid-template-columns:1fr;gap:20px}
+  .pp__media{position:static}
+  .pp__img{aspect-ratio:auto;height:min(380px,52vh)}
+  .pp-details{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .crumbs{font-size:12px;padding-top:12px}
+  .pp__img{height:300px;border-radius:18px}
+  .pp__img img{padding:12px}
+  .pp__img--photo img{padding:0}
+  .pp__badges{gap:6px;margin-top:10px}
+  .pp__badges li{padding:9px 4px;font-size:11px}
+  .pp__badges svg{width:18px;height:18px}
+  .pp__info h1{font-size:28px}
+  .pp__price .price{font-size:34px}
+  .pp__desc{font-size:15px}
+  .pp-form{padding:16px 14px}
+  .pp-form .row2{grid-template-columns:1fr 1fr;gap:10px}
+  .pp-details__text .btn{justify-self:stretch;white-space:normal;min-height:54px}
+}
+
 /* ======================= HERO ======================= */
 .price{font:700 28px/1 var(--font-lat);color:var(--gold-light);white-space:nowrap}
 .price small{font-size:14px;font-weight:600;margin-inline-start:3px;color:var(--gold)}
