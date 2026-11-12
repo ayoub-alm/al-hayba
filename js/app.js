@@ -13,7 +13,7 @@
     cartKey: "alhayba-cart-v1",
     // Google Sheet: paste your Apps Script "Web app URL" here (ends with /exec).
     // Leave empty to skip the Sheet and go straight to WhatsApp.
-    sheetUrl: "",
+    sheetUrl: "https://script.google.com/macros/s/AKfycbzzMBtY5QAcx0ynBJ7D_23IRIV9_Ic8xFka8v1H8eyvKfOCF6PuYYNZyhmMEyJDplNy4g/exec",
   };
   /* ====================================================== */
 
