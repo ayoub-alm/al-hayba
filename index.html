@@ -36,7 +36,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Cinzel:wght@700&family=Poppins:wght@500;600;700&display=swap">
 <link rel="preload" as="image" href="assets/products/sexo-miel.webp" fetchpriority="high">
-<link rel="stylesheet" href="css/styles.css?v=20261112e">
+<link rel="stylesheet" href="css/styles.css?v=20261112f">
 <script>document.documentElement.classList.add("js")</script>
 
 <script type="application/ld+json">
@@ -160,42 +160,55 @@
 
 <!-- ============ HERO ============ -->
 <section class="hero" aria-labelledby="heroTitle">
+  <div class="hero__bg" aria-hidden="true">
+    <span class="hero__spot"></span>
+    <span class="hero__watermark">ALHAYBA</span>
+    <span class="hero__spark s1"></span><span class="hero__spark s2"></span><span class="hero__spark s3"></span>
+    <span class="hero__spark s4"></span><span class="hero__spark s5"></span><span class="hero__spark s6"></span>
+  </div>
+
   <div class="wrap hero__grid">
-    <div class="hero__copy">
-      <p class="hero__kicker">عسل بالأعشاب · مكملات · زيوت طبيعية</p>
+    <div class="hero__text">
+      <p class="hero__kicker"><span class="hero__dot"></span>الأكثر طلباً فمتجر الهيبة</p>
       <h1 id="heroTitle">قوة الطبيعة <em>فكل معلقة</em></h1>
       <p class="hero__lead">
-        متجر الهيبة كيجمع ليك أحسن منتجات العناية الطبيعية للرجل: عسل بالأعشاب، مكملات غذائية وزيوت للتدليك — كتوصلك لباب الدار وكتخلص عند الاستلام.
-        <span lang="fr" dir="ltr">Miel aux plantes, compléments et huiles naturelles — livraison partout au Maroc.</span>
+        <strong>سكسو ميل</strong> — عسل طبيعي بالأعشاب، ومعاه مجموعة كاملة ديال المكملات والزيوت الطبيعية للرجل.
+        <span lang="fr" dir="ltr">Miel aux plantes &amp; compléments naturels — livraison partout au Maroc.</span>
       </p>
-      <div class="hero__cta">
-        <a class="btn btn--gold" href="#products">تصفح المنتجات <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        <a class="btn btn--outline" data-wa="general" href="https://wa.me/212784960106" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-wa"/></svg> سولنا على واتساب</a>
-      </div>
-      <ul class="hero__facts">
-        <li><strong>13</strong><span>منتج طبيعي</span></li>
-        <li><strong>3</strong><span>أصناف</span></li>
-        <li><strong>COD</strong><span>الدفع عند الاستلام</span></li>
-      </ul>
     </div>
 
-    <aside class="feature" aria-label="المنتج المميز">
-      <div class="feature__glow" aria-hidden="true"></div>
-      <div class="feature__card">
-        <span class="feature__badge">الأكثر طلباً</span>
-        <div class="feature__img">
-          <img src="assets/products/sexo-miel.webp" alt="قنينة سكسو ميل 125 مل — عسل طبيعي بالأعشاب" width="675" height="900" fetchpriority="high" decoding="async">
-        </div>
-        <div class="feature__info">
-          <p class="feature__name">سكسو ميل <small lang="fr" dir="ltr">Sexo Miel · 125 ml</small></p>
-          <p class="price">199<small>DH</small></p>
-        </div>
-        <div class="feature__actions">
-                <button type="button" class="btn btn--gold" data-order="sexo">اطلب دابا</button>
-                <button type="button" class="btn-icon btn-icon--cart" data-add-cart="sexo" aria-label="زيد سكسو ميل للسلة"><svg aria-hidden="true"><use href="#i-cart"/></svg></button>
-              </div>
+    <div class="hero__visual" aria-label="سكسو ميل، بروستا ميل والماكا">
+      <div class="hero__ring" aria-hidden="true"></div>
+      <figure class="hero__card hero__card--back hero__card--l">
+        <img src="assets/products/prosta-miel.webp" alt="بروستا ميل" width="600" height="800" decoding="async">
+      </figure>
+      <figure class="hero__card hero__card--back hero__card--r">
+        <img src="assets/products/maca.webp" alt="الماكا 60 كبسولة" width="800" height="800" decoding="async">
+      </figure>
+      <figure class="hero__card hero__card--main">
+        <img src="assets/products/sexo-miel.webp" alt="قنينة سكسو ميل 125 مل — عسل طبيعي بالأعشاب" width="675" height="900" fetchpriority="high" decoding="async">
+        <figcaption><b>سكسو ميل</b><span lang="fr" dir="ltr">Sexo Miel · 125 ml</span></figcaption>
+      </figure>
+      <div class="hero__seal" aria-hidden="true"><b>199</b><span>DH</span></div>
+      <div class="hero__pill hero__pill--a" aria-hidden="true"><svg><use href="#i-lock"/></svg> تغليف سري</div>
+      <div class="hero__pill hero__pill--b" aria-hidden="true"><svg><use href="#i-leaf"/></svg> عسل بالأعشاب</div>
+    </div>
+
+    <div class="hero__actions">
+      <div class="hero__price-line">
+        <span class="price">199<small>DH</small></span>
+        <span class="hero__price-note">قنينة 125 مل · الدفع عند الاستلام</span>
       </div>
-    </aside>
+      <div class="hero__cta">
+        <button type="button" class="btn btn--gold btn--xl" data-order="sexo"><svg aria-hidden="true"><use href="#i-check"/></svg> اطلب سكسو ميل دابا</button>
+        <a class="btn btn--outline btn--xl" href="#products">شوف كل المنتجات <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+      <ul class="hero__assure">
+        <li><svg aria-hidden="true"><use href="#i-cash"/></svg>الدفع عند الاستلام</li>
+        <li><svg aria-hidden="true"><use href="#i-truck"/></svg>التوصيل لجميع المدن</li>
+        <li><svg aria-hidden="true"><use href="#i-wa"/></svg>تأكيد على واتساب</li>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -925,6 +938,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=20261112e" defer></script>
+<script src="js/app.js?v=20261112f" defer></script>
 </body>
 </html>
