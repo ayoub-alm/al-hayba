@@ -10,6 +10,8 @@
     whatsapp2: "212700430167",  // second number 07 00 43 01 67
     currency: "DH",
     featured: "sexo",           // product shown in the mobile bottom bar
+    upsell: "ginger",           // "add this too" suggestion in the order popup
+    upsellAlt: "jamal",         // suggestion when the customer orders the upsell product itself
     cartKey: "alhayba-cart-v1",
     // Google Sheet: paste your Apps Script "Web app URL" here (ends with /exec).
     // Leave empty to skip the Sheet and go straight to WhatsApp.
@@ -77,20 +79,38 @@
   }
 
   const PHONE_RE = /^(?:0[5-7]\d{8}|(?:\+|00)?212[5-7]\d{8})$/;
-  // Returns {name, city, phone} or null (and shows the error).
+  const CUSTOMER_KEY = "alhayba-customer-v1";
+  const customerForms = () => $$("#qoForm, #cartForm, #orderForm");
+
+  // Returns {name, city, phone, address} or null (and shows the error).
   function readCustomer(form, errEl) {
     const f = form.elements;
     const name = f.name.value.trim(), city = f.city.value.trim(), phone = f.phone.value.trim();
+    const address = f.address ? f.address.value.trim() : "";
     [f.name, f.city, f.phone].forEach(i => i.removeAttribute("aria-invalid"));
-    const bad = !name ? f.name : !city ? f.city : !PHONE_RE.test(phone.replace(/[\s().-]/g, "")) ? f.phone : null;
+    const bad = !name ? f.name : !PHONE_RE.test(phone.replace(/[\s().-]/g, "")) ? f.phone : !city ? f.city : null;
     if (bad) {
       bad.setAttribute("aria-invalid", "true");
-      errEl.textContent = bad === f.phone ? "رقم الهاتف ماشي صحيح (مثال: 0612345678)." : "عافاك عمر الاسم والمدينة.";
+      errEl.textContent = bad === f.phone ? "رقم الهاتف ماشي صحيح (مثال: 0612345678)." : bad === f.name ? "عافاك كتب الاسم ديالك." : "عافاك كتب المدينة.";
       bad.focus();
       return null;
     }
     errEl.textContent = "";
-    return { name, city, phone, bot: f.website?.value || "" };
+    return { name, city, phone, address, bot: f.website?.value || "" };
+  }
+
+  // Remember the customer on this device so the next order is faster.
+  function saveCustomer(c) {
+    try { localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ name: c.name, phone: c.phone, city: c.city, address: c.address })); } catch { /* ignore */ }
+  }
+  function prefillCustomer() {
+    let c;
+    try { c = JSON.parse(localStorage.getItem(CUSTOMER_KEY) || "null"); } catch { c = null; }
+    if (!c || typeof c !== "object") return;
+    customerForms().forEach(form => ["name", "phone", "city", "address"].forEach(k => {
+      const input = form.elements[k];
+      if (input && !input.value && typeof c[k] === "string") input.value = c[k].slice(0, 200);
+    }));
   }
 
   function setLoading(btn, on) {
@@ -98,12 +118,13 @@
     btn.disabled = on;
     const label = btn.querySelector("span");
     if (label) {
-      label.dataset.text ??= label.textContent;
-      label.textContent = on ? "كنسجلو الطلب…" : label.dataset.text;
+      if (on) { label.dataset.html = label.innerHTML; label.textContent = "كنسجلو الطلب…"; }
+      else label.innerHTML = label.dataset.html || label.innerHTML;
     }
   }
 
-  const customerLines = c => `\n\n👤 الاسم: ${c.name}\n📍 المدينة: ${c.city}\n📞 الهاتف: ${c.phone}`;
+  const customerLines = c =>
+    `\n\n👤 الاسم: ${c.name}\n📞 الهاتف: ${c.phone}\n📍 المدينة: ${c.city}` + (c.address ? `\n🏠 العنوان: ${c.address}` : "");
 
   /* ---------- toast ---------- */
   const toastEl = $("#toast");
@@ -190,7 +211,48 @@
 
   cartBtn.addEventListener("click", () => { renderCart(); openDialog(cartDialog); });
 
-  // Cart checkout: save to Sheet, then go to WhatsApp
+  /* ================= PLACE ORDER (shared) =================
+     1. save to Google Sheet  2. show confirmation  3. go to WhatsApp */
+  const qoDialog = $("#orderDialog"), qoForm = $("#qoForm"), qoDone = $("#qoDone");
+  let redirectTimer;
+
+  async function placeOrder({ source, list, c, btn }) {
+    const orderId = newOrderId();
+    const sum = list.reduce((s, x) => s + x.p.price * x.q, 0);
+    const lines = list.map(({ p, q }) => `• ${p.nameFr} (${p.name}) — ${p.size} × ${q} = ${money(p.price * q)}`);
+    const msg = `${hello}\nطلب جديد رقم ${orderId}:\n${lines.join("\n")}\n\nالمجموع: ${money(sum)}${customerLines(c)}\n\nعفاكم أكدو ليا الطلب وثمن التوصيل.`;
+
+    setLoading(btn, true);
+    await sendOrder({
+      type: "order", source, orderId,
+      name: c.name, phone: c.phone, website: c.bot,
+      city: c.address ? `${c.city} — ${c.address}` : c.city,
+      items: list.map(({ p, q }) => ({ id: p.id, name: p.nameFr, size: p.size, qty: q, price: p.price })),
+      total: sum,
+    });
+    setLoading(btn, false);
+    saveCustomer(c);
+    prefillCustomer();
+
+    // confirmation screen
+    $$("dialog[open]").forEach(d => d !== qoDialog && d.close());
+    qoForm.hidden = true;
+    qoDone.hidden = false;
+    $("#qoDoneId").textContent = orderId;
+    const url = wa(msg);
+    $("#qoDoneWa").href = url;
+    if (!qoDialog.open) openDialog(qoDialog);
+    clearTimeout(redirectTimer);
+    redirectTimer = setTimeout(() => { location.href = url; }, 1800);
+    return orderId;
+  }
+  qoDialog.addEventListener("close", () => {
+    clearTimeout(redirectTimer);
+    qoForm.hidden = false;
+    qoDone.hidden = true;
+  });
+
+  // Cart checkout
   const cartForm = $("#cartForm");
   cartForm.addEventListener("submit", async e => {
     e.preventDefault();
@@ -198,23 +260,65 @@
     if (!list.length) return;
     const c = readCustomer(cartForm, $("#cartError"));
     if (!c) return;
-    const btn = $("#cartCheckout");
-    const orderId = newOrderId();
-    const sum = list.reduce((s, x) => s + x.p.price * x.q, 0);
-    const lines = list.map(({ p, q }) => `• ${p.nameFr} (${p.name}) — ${p.size} × ${q} = ${money(p.price * q)}`);
-    const msg = `${hello}\nطلب جديد رقم ${orderId}:\n${lines.join("\n")}\n\nمجموع المنتجات: ${money(sum)}${customerLines(c)}\n\nعفاكم أكدو ليا ثمن التوصيل.`;
-
-    setLoading(btn, true);
-    await sendOrder({
-      type: "order", source: "cart", orderId,
-      name: c.name, city: c.city, phone: c.phone, website: c.bot,
-      items: list.map(({ p, q }) => ({ id: p.id, name: p.nameFr, size: p.size, qty: q, price: p.price })),
-      total: sum,
-    });
+    await placeOrder({ source: "cart", list, c, btn: $("#cartCheckout") });
     cart = {};
     renderCart();
-    setLoading(btn, false);
-    location.href = wa(msg);
+  });
+
+  /* ================= QUICK ORDER ================= */
+  const qo = { id: null, qty: 1 };
+  const upsellFor = id => byId[id === CONFIG.upsell ? CONFIG.upsellAlt : CONFIG.upsell];
+
+  function renderQuickOrder() {
+    const p = byId[qo.id], up = upsellFor(qo.id);
+    $("#qoQty").textContent = qo.qty;
+    const withUp = up && $("#qoUpsellCheck").checked;
+    $("#qoTotal").textContent = money(p.price * qo.qty + (withUp ? up.price : 0));
+    $("#qoSubmit span").innerHTML = `أكد الطلب — <bdi dir="ltr">${money(p.price * qo.qty + (withUp ? up.price : 0))}</bdi>`;
+  }
+  function openQuickOrder(id, qty = 1) {
+    const p = byId[id];
+    if (!p) return;
+    $$("dialog[open]").forEach(d => d.close());
+    qo.id = id; qo.qty = qty;
+    $("#qoImg").src = p.img;
+    $("#qoImg").alt = p.name;
+    $("#qoName").textContent = p.name;
+    $("#qoSub").textContent = `${p.nameFr} · ${p.size}`;
+    $("#qoUnit").textContent = money(p.price);
+    const up = upsellFor(id);
+    $("#qoUpsell").hidden = !up;
+    $("#qoUpsellCheck").checked = false;
+    if (up) {
+      $("#qoUpImg").src = up.img;
+      $("#qoUpName").textContent = up.name;
+      $("#qoUpPrice").textContent = `+ ${money(up.price)} فقط`;
+    }
+    $("#qoError").textContent = "";
+    prefillCustomer();
+    renderQuickOrder();
+    openDialog(qoDialog);
+    // focus first empty field (keyboard users / desktop)
+    if (matchMedia("(hover: hover)").matches) {
+      const first = ["name", "phone", "city"].map(k => qoForm.elements[k]).find(i => !i.value);
+      (first || $("#qoSubmit")).focus();
+    }
+  }
+  $("#qoMinus").addEventListener("click", () => { qo.qty = Math.max(1, qo.qty - 1); renderQuickOrder(); });
+  $("#qoPlus").addEventListener("click", () => { qo.qty = Math.min(10, qo.qty + 1); renderQuickOrder(); });
+  $("#qoUpsellCheck").addEventListener("change", renderQuickOrder);
+  qoForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const c = readCustomer(qoForm, $("#qoError"));
+    if (!c) return;
+    const list = [{ p: byId[qo.id], q: qo.qty }];
+    const up = upsellFor(qo.id);
+    if (up && $("#qoUpsellCheck").checked) list.push({ p: up, q: 1 });
+    await placeOrder({ source: "quick", list, c, btn: $("#qoSubmit") });
+  });
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-order]");
+    if (b) openQuickOrder(b.dataset.order);
   });
 
   document.addEventListener("click", e => {
@@ -259,6 +363,7 @@
   $("#pdMinus").addEventListener("click", () => setPdQty(pdQty - 1));
   $("#pdPlus").addEventListener("click", () => setPdQty(pdQty + 1));
   $("#pdAdd").addEventListener("click", () => { addToCart(pdId, pdQty); pd.close(); });
+  $("#pdOrder").addEventListener("click", () => openQuickOrder(pdId, pdQty));
   document.addEventListener("click", e => {
     const t = e.target.closest("[data-open-detail]");
     if (t) openProduct(t.closest(".p-card").dataset.id);
@@ -303,19 +408,7 @@
     e.preventDefault();
     const c = readCustomer(form, errEl);
     if (!c) return;
-    const p = byId[sel.value], q = Number(qtySel.value);
-    const orderId = newOrderId();
-    const msg = `${hello}\nطلب جديد رقم ${orderId}:\n• المنتج: ${p.nameFr} (${p.name}) — ${p.size}\n• الكمية: ${q}\n• الثمن: ${money(p.price * q)}${customerLines(c)}`;
-    const btn = $("button[type=submit]", form);
-    setLoading(btn, true);
-    await sendOrder({
-      type: "order", source: "form", orderId,
-      name: c.name, city: c.city, phone: c.phone, website: c.bot,
-      items: [{ id: p.id, name: p.nameFr, size: p.size, qty: q, price: p.price }],
-      total: p.price * q,
-    });
-    setLoading(btn, false);
-    location.href = wa(msg);
+    await placeOrder({ source: "form", list: [{ p: byId[sel.value], q: Number(qtySel.value) }], c, btn: $("button[type=submit]", form) });
   });
 
   /* ---------- log direct WhatsApp product clicks ---------- */
@@ -340,8 +433,8 @@
       const p = byId[CONFIG.featured];
       $("#mbarTitle").innerHTML = `${p.name} · <bdi dir="ltr">${p.size}</bdi>`;
       $("#mbarPrice").textContent = money(p.price);
-      barBtn.textContent = "زيد للسلة";
-      barBtn.onclick = () => addToCart(p.id);
+      barBtn.textContent = "اطلب دابا";
+      barBtn.onclick = () => openQuickOrder(p.id);
     }
   }
   new IntersectionObserver(([en]) => bar.classList.toggle("is-on", !en.isIntersecting))
@@ -375,5 +468,9 @@
   // pause other videos when one plays
   $$("video").forEach(v => v.addEventListener("play", () => $$("video").forEach(o => o !== v && o.pause())));
 
+  // Coming back from WhatsApp with the Back button: start clean.
+  addEventListener("pageshow", e => { if (e.persisted && qoDialog.open) qoDialog.close(); });
+
+  prefillCustomer();
   renderCart();
 })();
