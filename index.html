@@ -36,7 +36,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Cinzel:wght@700&family=Poppins:wght@500;600;700&display=swap">
 <link rel="preload" as="image" href="assets/products/sexo-miel.webp" fetchpriority="high">
-<link rel="stylesheet" href="css/styles.css?v=20261112b">
+<link rel="stylesheet" href="css/styles.css?v=20261112c">
 <script>document.documentElement.classList.add("js")</script>
 
 <script type="application/ld+json">
@@ -702,8 +702,9 @@
           </div>
         </div>
         <div class="order__total"><span>ثمن المنتجات (بلا التوصيل)</span><strong id="fTotal">199 DH</strong></div>
+        <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <p class="form-error" id="formError" role="alert"></p>
-        <button class="btn btn--gold btn--block" type="submit"><svg aria-hidden="true"><use href="#i-wa"/></svg> أكد الطلب عبر واتساب</button>
+        <button class="btn btn--gold btn--block" type="submit"><svg aria-hidden="true"><use href="#i-wa"/></svg> <span>أكد الطلب عبر واتساب</span></button>
         <p class="form-note">غادي يتحل واتساب باش تراجع الطلب وتصيفطو. المعلومات ديالك كتستعمل غير للتوصيل.</p>
       </form>
     </div>
@@ -792,12 +793,30 @@
       <button type="button" class="x-btn" data-close aria-label="سد السلة"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="drawer__items" id="cartItems"></div>
-    <div class="drawer__foot">
+    <form class="drawer__foot" id="cartForm" novalidate>
       <div class="drawer__total"><span>المجموع (بلا التوصيل)</span><strong id="cartTotal">0 DH</strong></div>
+      <div class="drawer__fields" id="cartFields">
+        <div class="field">
+          <label for="cName">الاسم الكامل</label>
+          <input id="cName" name="name" autocomplete="name" placeholder="مثال: يوسف العلوي" required>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="cCity">المدينة</label>
+            <input id="cCity" name="city" autocomplete="address-level2" placeholder="الدار البيضاء" required>
+          </div>
+          <div class="field">
+            <label for="cPhone">رقم الهاتف</label>
+            <input id="cPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="06 XX XX XX XX" dir="ltr" required>
+          </div>
+        </div>
+        <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      </div>
+      <p class="form-error" id="cartError" role="alert"></p>
+      <button type="submit" class="btn btn--wa btn--block" id="cartCheckout"><svg aria-hidden="true"><use href="#i-wa"/></svg> <span>أكد الطلب عبر واتساب</span></button>
       <p class="drawer__note">ثمن التوصيل كيتأكد معاك على واتساب قبل تأكيد الطلب.</p>
-      <a class="btn btn--wa btn--block" id="cartCheckout" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-wa"/></svg> أكد الطلب عبر واتساب</a>
       <button type="button" class="btn btn--outline btn--block" data-close>كمّل التسوق</button>
-    </div>
+    </form>
   </div>
 </dialog>
 
@@ -828,6 +847,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/app.js?v=20261112b" defer></script>
+<script src="js/app.js?v=20261112c" defer></script>
 </body>
 </html>

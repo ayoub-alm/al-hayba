@@ -11,6 +11,9 @@
     currency: "DH",
     featured: "sexo",           // product shown in the mobile bottom bar
     cartKey: "alhayba-cart-v1",
+    // Google Sheet: paste your Apps Script "Web app URL" here (ends with /exec).
+    // Leave empty to skip the Sheet and go straight to WhatsApp.
+    sheetUrl: "",
   };
   /* ====================================================== */
 
@@ -44,6 +47,63 @@
     const key = a.dataset.wa, p = byId[key];
     a.href = p ? wa(productMsg(p)) : key === "general2" ? wa(generalMsg, CONFIG.whatsapp2) : wa(generalMsg);
   });
+
+  /* ---------- Google Sheet ---------- */
+  const newOrderId = () => "AH-" + Date.now().toString(36).toUpperCase().slice(-6);
+  const page = () => location.href.split("#")[0];
+
+  // Send an order, wait max 2.5 s, never block the customer if Google is slow/down.
+  function sendOrder(payload) {
+    if (!CONFIG.sheetUrl) return Promise.resolve();
+    const req = fetch(CONFIG.sheetUrl, {
+      method: "POST",
+      mode: "no-cors",
+      keepalive: true,
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...payload, page: page() }),
+    }).catch(() => {});
+    return Promise.race([req, new Promise(r => setTimeout(r, 2500))]);
+  }
+
+  // Log a direct WhatsApp click (no customer data) — fire and forget.
+  function logClick(p, button) {
+    if (!CONFIG.sheetUrl || !p) return;
+    const body = JSON.stringify({ type: "click", product: `${p.nameFr} (${p.size})`, price: p.price, button, page: page() });
+    try {
+      if (!navigator.sendBeacon?.(CONFIG.sheetUrl, new Blob([body], { type: "text/plain" }))) throw 0;
+    } catch {
+      fetch(CONFIG.sheetUrl, { method: "POST", mode: "no-cors", keepalive: true, body }).catch(() => {});
+    }
+  }
+
+  const PHONE_RE = /^(?:0[5-7]\d{8}|(?:\+|00)?212[5-7]\d{8})$/;
+  // Returns {name, city, phone} or null (and shows the error).
+  function readCustomer(form, errEl) {
+    const f = form.elements;
+    const name = f.name.value.trim(), city = f.city.value.trim(), phone = f.phone.value.trim();
+    [f.name, f.city, f.phone].forEach(i => i.removeAttribute("aria-invalid"));
+    const bad = !name ? f.name : !city ? f.city : !PHONE_RE.test(phone.replace(/[\s().-]/g, "")) ? f.phone : null;
+    if (bad) {
+      bad.setAttribute("aria-invalid", "true");
+      errEl.textContent = bad === f.phone ? "رقم الهاتف ماشي صحيح (مثال: 0612345678)." : "عافاك عمر الاسم والمدينة.";
+      bad.focus();
+      return null;
+    }
+    errEl.textContent = "";
+    return { name, city, phone, bot: f.website?.value || "" };
+  }
+
+  function setLoading(btn, on) {
+    btn.classList.toggle("is-loading", on);
+    btn.disabled = on;
+    const label = btn.querySelector("span");
+    if (label) {
+      label.dataset.text ??= label.textContent;
+      label.textContent = on ? "كنسجلو الطلب…" : label.dataset.text;
+    }
+  }
+
+  const customerLines = c => `\n\n👤 الاسم: ${c.name}\n📍 المدينة: ${c.city}\n📞 الهاتف: ${c.phone}`;
 
   /* ---------- toast ---------- */
   const toastEl = $("#toast");
@@ -113,10 +173,7 @@
     const checkout = $("#cartCheckout");
     checkout.classList.toggle("is-disabled", !list.length);
     checkout.setAttribute("aria-disabled", String(!list.length));
-    if (list.length) {
-      const lines = list.map(({ p, q }) => `• ${p.nameFr} (${p.name}) — ${p.size} × ${q} = ${money(p.price * q)}`);
-      checkout.href = wa(`${hello}\nبغيت نطلب:\n${lines.join("\n")}\n\nمجموع المنتجات: ${money(sum)}\nعفاكم أكدو ليا ثمن التوصيل.`);
-    } else checkout.removeAttribute("href");
+    $("#cartFields").hidden = !list.length;
 
     try { localStorage.setItem(CONFIG.cartKey, JSON.stringify(cart)); } catch { /* ignore */ }
     updateBar();
@@ -132,6 +189,33 @@
   }
 
   cartBtn.addEventListener("click", () => { renderCart(); openDialog(cartDialog); });
+
+  // Cart checkout: save to Sheet, then go to WhatsApp
+  const cartForm = $("#cartForm");
+  cartForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = entries();
+    if (!list.length) return;
+    const c = readCustomer(cartForm, $("#cartError"));
+    if (!c) return;
+    const btn = $("#cartCheckout");
+    const orderId = newOrderId();
+    const sum = list.reduce((s, x) => s + x.p.price * x.q, 0);
+    const lines = list.map(({ p, q }) => `• ${p.nameFr} (${p.name}) — ${p.size} × ${q} = ${money(p.price * q)}`);
+    const msg = `${hello}\nطلب جديد رقم ${orderId}:\n${lines.join("\n")}\n\nمجموع المنتجات: ${money(sum)}${customerLines(c)}\n\nعفاكم أكدو ليا ثمن التوصيل.`;
+
+    setLoading(btn, true);
+    await sendOrder({
+      type: "order", source: "cart", orderId,
+      name: c.name, city: c.city, phone: c.phone, website: c.bot,
+      items: list.map(({ p, q }) => ({ id: p.id, name: p.nameFr, size: p.size, qty: q, price: p.price })),
+      total: sum,
+    });
+    cart = {};
+    renderCart();
+    setLoading(btn, false);
+    location.href = wa(msg);
+  });
 
   document.addEventListener("click", e => {
     const add = e.target.closest("[data-add-cart]");
@@ -215,23 +299,31 @@
   qtySel.addEventListener("change", updTotal);
   updTotal();
 
-  form.addEventListener("submit", e => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
-    const f = form.elements;
-    const name = f.name.value.trim(), city = f.city.value.trim(), phone = f.phone.value.trim();
-    const phoneOk = /^(?:0[5-7]\d{8}|(?:\+|00)?212[5-7]\d{8})$/.test(phone.replace(/[\s().-]/g, ""));
-    [f.name, f.city, f.phone].forEach(i => i.removeAttribute("aria-invalid"));
-    const bad = !name ? f.name : !city ? f.city : !phoneOk ? f.phone : null;
-    if (bad) {
-      bad.setAttribute("aria-invalid", "true");
-      errEl.textContent = bad === f.phone ? "رقم الهاتف ماشي صحيح (مثال: 0612345678)." : "عافاك عمر الاسم والمدينة.";
-      bad.focus();
-      return;
-    }
-    errEl.textContent = "";
+    const c = readCustomer(form, errEl);
+    if (!c) return;
     const p = byId[sel.value], q = Number(qtySel.value);
-    const msg = `${hello}\nطلب جديد:\n• المنتج: ${p.nameFr} (${p.name}) — ${p.size}\n• الكمية: ${q}\n• الثمن: ${money(p.price * q)}\n\n👤 الاسم: ${name}\n📍 المدينة: ${city}\n📞 الهاتف: ${phone}`;
-    window.open(wa(msg), "_blank", "noopener");
+    const orderId = newOrderId();
+    const msg = `${hello}\nطلب جديد رقم ${orderId}:\n• المنتج: ${p.nameFr} (${p.name}) — ${p.size}\n• الكمية: ${q}\n• الثمن: ${money(p.price * q)}${customerLines(c)}`;
+    const btn = $("button[type=submit]", form);
+    setLoading(btn, true);
+    await sendOrder({
+      type: "order", source: "form", orderId,
+      name: c.name, city: c.city, phone: c.phone, website: c.bot,
+      items: [{ id: p.id, name: p.nameFr, size: p.size, qty: q, price: p.price }],
+      total: p.price * q,
+    });
+    setLoading(btn, false);
+    location.href = wa(msg);
+  });
+
+  /* ---------- log direct WhatsApp product clicks ---------- */
+  document.addEventListener("click", e => {
+    const a = e.target.closest("a[data-wa], #pdWa");
+    if (!a) return;
+    const p = a.id === "pdWa" ? byId[pdId] : byId[a.dataset.wa];
+    if (p) logClick(p, a.id === "pdWa" ? "fiche produit" : a.closest(".p-card") ? "carte produit" : "autre");
   });
 
   /* ================= MOBILE BAR ================= */

@@ -3,6 +3,28 @@
 Static storefront (HTML/CSS/JS, no build step) with categories, product details, cart and WhatsApp ordering.
 Live: https://al-hayba.vercel.app/
 
+## Orders → Google Sheet → WhatsApp
+When a customer confirms an order (order form or cart), the site:
+1. saves it in the Google Sheet (tab **Commandes**: date, order number, name, phone, city, products, total, status),
+2. then redirects the customer to WhatsApp with the same order number in the message.
+
+Clicks on a product's WhatsApp button are saved in a second tab, **Clics WhatsApp**.
+If Google is slow or down, the customer is still sent to WhatsApp after 2.5 s — no order is blocked.
+
+### Setup (once, ~5 minutes)
+1. Open the Google Sheet → **Extensions → Apps Script**.
+2. Delete the code in `Code.gs`, paste the content of [`google-apps-script/Code.gs`](google-apps-script/Code.gs), click 💾 Save.
+3. **Deploy → New deployment** → ⚙️ type **Web app** →
+   *Execute as:* **Me** · *Who has access:* **Anyone** → **Deploy**.
+4. Google asks for authorization → choose your account → *Advanced* → *Go to (unsafe)* → **Allow**
+   (it's your own script; it only writes to this Sheet).
+5. Copy the **Web app URL** (`https://script.google.com/macros/s/…/exec`).
+   Open it in the browser: you should see `{"ok":true,...}`.
+6. Paste it in `js/app.js` → `CONFIG.sheetUrl`, bump `?v=` on the `app.js` link in `index.html`, push.
+
+The tabs **Commandes** and **Clics WhatsApp** are created automatically on the first order.
+To change the script later: **Deploy → Manage deployments → ✏️ → Version: New version → Deploy** (URL stays the same).
+
 ## Structure
 ```
 index.html          page + all product cards + SEO structured data (JSON-LD)
