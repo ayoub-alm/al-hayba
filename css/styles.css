@@ -171,7 +171,7 @@ section[id],[id^="cat-"]{scroll-margin-top:calc(var(--header-h) + 64px)}
 .p-details{display:none}
 
 /* ---------- videos ---------- */
-.videos{display:grid;grid-template-columns:1fr 1fr 300px;gap:20px;align-items:start}
+.videos{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .video{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
 .video video{width:100%;aspect-ratio:16/9;background:#000;object-fit:contain}
 .video--portrait video{aspect-ratio:9/16}
@@ -188,7 +188,7 @@ section[id],[id^="cat-"]{scroll-margin-top:calc(var(--header-h) + 64px)}
 
 /* ---------- order form ---------- */
 .order{display:grid;grid-template-columns:.85fr 1.15fr;border:1px solid var(--line-2);border-radius:22px;overflow:hidden;background:var(--surface)}
-.order__aside{position:relative;padding:40px 36px;display:flex;flex-direction:column;justify-content:flex-end;min-height:440px;background:linear-gradient(0deg,rgba(11,9,7,.97) 18%,rgba(11,9,7,.25) 70%),url("../assets/products/sexo-miel.webp") center 30%/cover}
+.order__aside{position:relative;padding:40px 36px;display:flex;flex-direction:column;justify-content:flex-end;min-height:440px;background:linear-gradient(0deg,rgba(11,9,7,.97) 18%,rgba(11,9,7,.25) 70%),url("../assets/products/prosta-miel.webp") center 30%/cover}
 .order__aside h2{font-size:30px;font-weight:800;line-height:1.35;margin:8px 0 12px}
 .order__aside ul{list-style:none;display:grid;gap:8px;font-size:14px;color:var(--muted)}
 .order__aside li{display:flex;gap:8px;align-items:center}

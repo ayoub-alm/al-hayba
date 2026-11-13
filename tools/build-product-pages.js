@@ -104,8 +104,9 @@ const cartSvg = '<svg aria-hidden="true"><use href="#i-cart"/></svg>';
 const waSvg = '<svg aria-hidden="true"><use href="#i-wa"/></svg>';
 
 function relatedCards(p) {
-  const same = products.filter(x => x.group === p.group && x.id !== p.id);
-  const others = products.filter(x => x.group !== p.group);
+  const ok = x => x.id !== p.id && x.id !== "sexo";
+  const same = products.filter(x => x.group === p.group && ok(x));
+  const others = products.filter(x => x.group !== p.group && ok(x));
   return [...same, ...others].slice(0, 4).map(x => {
     const s = imgSize(x.imgFile);
     return `
@@ -235,7 +236,7 @@ ${header}
       <ul class="pp__badges">
         <li><svg aria-hidden="true"><use href="#i-cash"/></svg><span>الدفع عند الاستلام</span></li>
         <li><svg aria-hidden="true"><use href="#i-truck"/></svg><span>التوصيل لجميع المدن</span></li>
-        <li><svg aria-hidden="true"><use href="#i-lock"/></svg><span>تغليف سري</span></li>
+        <li><svg aria-hidden="true"><use href="#i-lock"/></svg><span>تغليف محكم</span></li>
       </ul>
     </div>
 
@@ -291,7 +292,7 @@ ${header}
           <button type="submit" class="btn btn--gold btn--block qo__submit" id="ppSubmit"><svg aria-hidden="true"><use href="#i-check"/></svg> <span>أكد الطلب</span></button>
           <ul class="qo__assure">
             <li><svg aria-hidden="true"><use href="#i-cash"/></svg>ما كتخلص والو دابا</li>
-            <li><svg aria-hidden="true"><use href="#i-lock"/></svg>تغليف سري</li>
+            <li><svg aria-hidden="true"><use href="#i-lock"/></svg>تغليف محكم</li>
             <li><svg aria-hidden="true"><use href="#i-truck"/></svg>جميع المدن</li>
           </ul>
         </form>

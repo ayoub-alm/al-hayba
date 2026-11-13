@@ -10,7 +10,7 @@
     whatsapp: "212784960106",   // main number   07 84 96 01 06
     whatsapp2: "212700430167",  // second number 07 00 43 01 67
     currency: "DH",
-    featured: "sexo",           // product shown in the mobile bottom bar
+    featured: "prosta",           // product shown in the mobile bottom bar
     upsell: "ginger",           // "add this too" suggestion in the order popup
     upsellAlt: "jamal",         // suggestion when the customer orders the upsell product itself
     cartKey: "alhayba-cart-v1",
